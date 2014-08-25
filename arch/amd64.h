@@ -81,6 +81,7 @@ struct syscall_numbers arch_syscall_numbers[2] = {
         .nr_close   = 6,
         .nr_ioctl   = 54,
         .nr_dup2    = 63
+        .nr_dup     = 41
     }
 };
 

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2011 by Nelson Elhage
+ * Copyright (C) 2014 by Jérôme Pouiller <jezz@sysmic.org>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,19 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#define _GNU_SOURCE
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/select.h>
-#include <sys/ioctl.h>
-#include <stdio.h>
+//#include <sys/types.h>
+//#include <sys/select.h>
+//#include <sys/ioctl.h>
 #include <stdlib.h>
+//#include <termios.h>
+#include <signal.h>
+
 #include <errno.h>
 #include <string.h>
 #include <stdarg.h>
-#include <termios.h>
-#include <signal.h>
-
+#include <stdio.h>
+#include <linux/limits.h>
 #include "reptyr.h"
 
 #ifndef __linux__
@@ -39,13 +42,23 @@
 #endif
 
 static int verbose = 0;
+void usage();
 
 void _debug(const char *pfx, const char *msg, va_list ap) {
-
     if (pfx)
         fprintf(stderr, "%s", pfx);
     vfprintf(stderr, msg, ap);
     fprintf(stderr, "\n");
+}
+
+void usage_die(const char *msg, ...) {
+    va_list ap;
+    va_start(ap, msg);
+    _debug("[!] ", msg, ap);
+    va_end(ap);
+    usage();
+
+    exit(1);
 }
 
 void die(const char *msg, ...) {
@@ -58,7 +71,6 @@ void die(const char *msg, ...) {
 }
 
 void debug(const char *msg, ...) {
-
     va_list ap;
 
     if (!verbose)
@@ -76,93 +88,30 @@ void error(const char *msg, ...) {
     va_end(ap);
 }
 
-void setup_raw(struct termios *save) {
-    struct termios set;
-    if (tcgetattr(0, save) < 0)
-        die("Unable to read terminal attributes: %m");
-    set = *save;
-    cfmakeraw(&set);
-    if (tcsetattr(0, TCSANOW, &set) < 0)
-        die("Unable to set terminal attributes: %m");
-}
-
-void resize_pty(int pty) {
-    struct winsize sz;
-    if (ioctl(0, TIOCGWINSZ, &sz) < 0)
-        return;
-    ioctl(pty, TIOCSWINSZ, &sz);
-}
-
-int writeall(int fd, const void *buf, ssize_t count) {
-    ssize_t rv;
-    while (count > 0) {
-        rv = write(fd, buf, count);
-        if (rv < 0) {
-            if (errno == EINTR)
-                continue;
-            return rv;
-        }
-        count -= rv;
-        buf += rv;
-    }
-    return 0;
-}
-
-volatile sig_atomic_t winch_happened = 0;
-
-void do_winch(int signal) {
-    winch_happened = 1;
-}
-
-void do_proxy(int pty) {
-    char buf[4096];
-    ssize_t count;
-    fd_set set;
-    while (1) {
-        if (winch_happened) {
-            winch_happened = 0;
-            /*
-             * FIXME: If a signal comes in after this point but before
-             * select(), the resize will be delayed until we get more
-             * input. signalfd() is probably the cleanest solution.
-             */
-            resize_pty(pty);
-        }
-        FD_ZERO(&set);
-        FD_SET(0, &set);
-        FD_SET(pty, &set);
-        if (select(pty+1, &set, NULL, NULL, NULL) < 0) {
-            if (errno == EINTR)
-                continue;
-            fprintf(stderr, "select: %m");
-            return;
-        }
-        if (FD_ISSET(0, &set)) {
-            count = read(0, buf, sizeof buf);
-            if (count < 0)
-                return;
-            writeall(pty, buf, count);
-        }
-        if (FD_ISSET(pty, &set)) {
-            count = read(pty, buf, sizeof buf);
-            if (count < 0)
-                return;
-            writeall(1, buf, count);
-        }
-    }
-}
-
-void usage(char *me) {
-    fprintf(stderr, "Usage: %s [-s] PID\n", me);
-    fprintf(stderr, "       %s -l|-L [COMMAND [ARGS]]\n", me);
-    fprintf(stderr, "  -l    Create a new pty pair and print the name of the slave.\n");
-    fprintf(stderr, "           if there are command-line arguments after -l\n");
-    fprintf(stderr, "           they are executed with REPTYR_PTY set to path of pty.\n");
-    fprintf(stderr, "  -L    Like '-l', but also redirect the child's stdio to the slave.\n");
-    fprintf(stderr, "  -s    Attach fds 0-2 on the target, even if it is not attached to a tty.\n");
-    fprintf(stderr, "  -h    Print this help message and exit.\n");
-    fprintf(stderr, "  -v    Print the version number and exit.\n");
-    fprintf(stderr, "  -V    Print verbose debug output.\n");
+void usage() {
+    char *me = program_invocation_short_name;
+    fprintf(stderr, "Usage: %s PID [-m FILE|-o FILE|-e FILE|-O FD|-E FD] [-n STATUS_FILE] [-d]\n", me);
+    fprintf(stderr, "%s redirect outputs of a running process to a file.\n", me);
+    fprintf(stderr, "  PID Process to reattach\n");
+    fprintf(stderr, "  -o FILE         File to redirect stdout. \n");
+    fprintf(stderr, "  -e FILE         File to redirect stderr.\n");
+    fprintf(stderr, "  -m FILE         Same than -o FILE -e FILE.\n");
+    fprintf(stderr, "  -O FD           Redirect stdout to this FD. Mainly used \tore process");
+    fprintf(stderr, "                  outputs.\n");
+    fprintf(stderr, "  -E FD           Redirect stderr to this FD. Mainly used to restore process\n");
+    fprintf(stderr, "                  outputs.\n");
+    fprintf(stderr, "  -d              Create new process group before attaching PID. Necessary if\n");
+    fprintf(stderr, "                  if you call %s from a sub-process of PID.\n", me);
+    fprintf(stderr, "  -n RESTORE_FILE Change name of script generated to restore process outputs.\n");
+    fprintf(stderr, "                  Default is 'reptyr_PID.status'.\n");
+    fprintf(stderr, "  -N              Do not save previous stream and do not create restore file.\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Launch ./RESTORE_FILE to restore application outputs\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Notice you can redirect to another rogram using name pipe. For exemple:\n");
+    fprintf(stderr, "   mkfifo /tmp/fifo\n");
+    fprintf(stderr, "   tee /tmp/log < /tmp/fifo\n");
+    fprintf(stderr, "   %s PID -m /tmp/fifo\n", me);
 }
 
 void check_yama_ptrace_scope(void) {
@@ -184,101 +133,113 @@ void check_yama_ptrace_scope(void) {
     fprintf(stderr, "For more information, see /etc/sysctl.d/10-ptrace.conf\n");
 }
 
+void write_status_file(char *file, pid_t pid, int fdo, int fde)
+{
+    char buf[255];
+    int fd;
+    snprintf(buf, sizeof(buf), "#!/bin/sh\n\n%s -N -O %d -E %d %d\n", program_invocation_name, fdo, fde, pid);
+    if (!strlen(file))
+	snprintf(file, PATH_MAX, "reptyr_%d.status", pid);
+    fd = open(file, O_WRONLY | O_CREAT, 0777);
+    if (fd < 0)
+	usage_die("Cannot open %s\n", file);
+    write(fd, buf, strlen(buf));
+    close(fd);
+}
+
+
 int main(int argc, char **argv) {
-    struct termios saved_termios;
-    struct sigaction act;
-    int pty;
-    int arg = 1;
-    int do_attach = 1;
-    int force_stdio = 0;
-    int unattached_script_redirection = 0;
+    int new_pgrp = 0;
+    int no_restore = 0;
+    int fde = -1;
+    int fdo = -1;
+    int fde_orig = -1;
+    int fdo_orig = -1;
+    const char *fileo = NULL;
+    const char *filee = NULL;
+    char filestatus[PATH_MAX] = "";
+    pid_t pid;
+    int opt;
+    int err;
+    unsigned long scratch_page = (unsigned long) -1;
+    struct ptrace_child child;
 
-    if (argc < 2) {
-        usage(argv[0]);
-        return 2;
-    }
-    if (argv[arg][0] == '-') {
-        switch(argv[arg][1]) {
-        case 'h':
-            usage(argv[0]);
-            return 0;
-        case 'l':
-            do_attach = 0;
-            break;
-        case 'L':
-            do_attach = 0;
-            unattached_script_redirection = 1;
-            break;
-        case 's':
-            arg++;
-            force_stdio = 1;
-            break;
-        case 'v':
-            printf("This is reptyr version %s.\n", REPTYR_VERSION);
-            printf(" by Nelson Elhage <nelhage@nelhage.com>\n");
-            printf("http://github.com/nelhage/reptyr/\n");
-            return 0;
-        case 'V':
-            arg++;
-            verbose = 1;
-            break;
-        default:
-            usage(argv[0]);
-            return 1;
-        }
-    }
-
-    if (do_attach && arg >= argc) {
-        fprintf(stderr, "%s: No pid specified to attach\n", argv[0]);
-        usage(argv[0]);
-        return 1;
-    }
-
-    if ((pty = open("/dev/ptmx", O_RDWR|O_NOCTTY)) < 0)
-        die("Unable to open /dev/ptmx: %m");
-    if (unlockpt(pty) < 0)
-        die("Unable to unlockpt: %m");
-    if (grantpt(pty) < 0)
-        die("Unable to grantpt: %m");
-
-    if (do_attach) {
-        pid_t child = atoi(argv[arg]);
-        int err;
-        if ((err = attach_child(child, ptsname(pty), force_stdio))) {
-            fprintf(stderr, "Unable to attach to pid %d: %s\n", child, strerror(err));
-            if (err == EPERM) {
-                check_yama_ptrace_scope();
-            }
-            return 1;
-        }
-    } else {
-        printf("Opened a new pty: %s\n", ptsname(pty));
-        fflush(stdout);
-        if (argc > 2) {
-            if(!fork()) {
-                setenv("REPTYR_PTY", ptsname(pty), 1);
-                if (unattached_script_redirection) {
-                    int f;
-                    setpgid(0, getppid());
-                    setsid();
-                    f = open(ptsname(pty), O_RDONLY, 0); dup2(f, 0);            close(f);
-                    f = open(ptsname(pty), O_WRONLY, 0); dup2(f, 1); dup2(f,2); close(f);
-                }
-                close(pty);
-                execvp(argv[2], argv+2);
-                exit(1);
-            }
-        }
+    while ((opt = getopt(argc, argv, "m:o:e:O:E:s:dNvh")) != -1) {
+	switch (opt) {
+	    case 'O':
+		if (fileo || fdo >= 0)
+		    usage_die("-m, -o and -O are exclusive\n");
+		fdo = atoi(optarg);
+		break;
+	    case 'E':
+		if (filee || fde >= 0)
+		    usage_die("-m, -e and -E are exclusive\n");
+		fde = atoi(optarg);
+		break;
+	    case 'o':
+		if (fileo || fdo >= 0)
+		    usage_die("-m, -o and -O are exclusive\n");
+		fileo = optarg;
+		break;
+	    case 'e':
+		if (filee || fde >= 0)
+		    usage_die("-m, -e and -E are exclusive\n");
+		filee = optarg;
+		break;
+	    case 'm':
+		if (filee || fde >= 0 || fileo || fdo >= 0)
+		    usage_die("-m is exclusive with  -o, -e, -O and -E\n");
+		fileo = filee = optarg;
+		break;
+	    case 'n':
+		strncpy(filestatus, optarg, sizeof(filestatus));
+		break;
+	    case 'N':
+		no_restore = 1;
+		break;
+	    case 'd':
+		new_pgrp = 1;
+		break;
+	    case 'h':
+		usage(argv[0]);
+		exit(0);
+		break;
+	    case 'v':
+		verbose = 1;
+		break;
+	    case 'V':
+		printf("This is reptyr version %s.\n", REPTYR_VERSION);
+		printf("http://github.com/nelhage/reptyr/\n");
+		exit(0);
+	    default: /* '?' */
+		usage_die("Unknown option\n");
+		break;
+	}
     }
 
-    setup_raw(&saved_termios);
-    memset(&act, 0, sizeof act);
-    act.sa_handler = do_winch;
-    act.sa_flags   = 0;
-    sigaction(SIGWINCH, &act, NULL);
-    resize_pty(pty);
-    do_proxy(pty);
-    tcsetattr(0, TCSANOW, &saved_termios);
+    if (optind >= argc)
+        usage_die("No pid specified to attach\n");
+
+    pid = atoi(argv[optind]);
+    err = child_attach(pid, &child, &scratch_page);
+    if (err) {
+	fprintf(stderr, "Unable to attach to pid %d: %s\n", pid, strerror(err));
+	if (err == EPERM)
+	    check_yama_ptrace_scope();
+	exit(1);
+    }
+    if (fileo)
+	fdo = child_open(&child, scratch_page, fileo);
+    if (filee)
+	fde = child_open(&child, scratch_page, filee);
+    if (fdo >= 0)
+	fdo_orig = child_dup(&child, fdo, 1, !no_restore);
+    if (fde >= 0)
+	fde_orig = child_dup(&child, fde, 2, !no_restore);
+    child_detach(&child, scratch_page);
+
+    if (!no_restore)
+	write_status_file(filestatus, pid, fdo_orig, fde_orig);
 
     return 0;
 }

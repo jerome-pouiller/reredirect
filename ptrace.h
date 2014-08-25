@@ -19,6 +19,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#ifndef _PTRACE_H_
+#define _PTRACE_H_
 #include <sys/ptrace.h>
 #include <sys/user.h>
 #include <unistd.h>
@@ -75,6 +77,7 @@ struct syscall_numbers {
     long nr_open;
     long nr_close;
     long nr_ioctl;
+    long nr_dup;
     long nr_dup2;
 };
 
@@ -98,3 +101,5 @@ unsigned long ptrace_remote_syscall(struct ptrace_child *child,
 int ptrace_memcpy_to_child(struct ptrace_child *, child_addr_t, const void*, size_t);
 int ptrace_memcpy_from_child(struct ptrace_child *, void*, child_addr_t, size_t);
 struct syscall_numbers *ptrace_syscall_numbers(struct ptrace_child *child);
+#endif /* _PTRACE_H_ */
+

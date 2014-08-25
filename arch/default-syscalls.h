@@ -27,6 +27,7 @@
     SC(close),
     SC(ioctl),
     SC(dup2),
+    SC(dup),
 },
 
 #undef SC

@@ -19,10 +19,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include "ptrace.h"
 
 #define REPTYR_VERSION "0.5dev"
 
-int attach_child(pid_t pid, const char *pty, int force_stdio);
+int child_attach(pid_t pid, struct ptrace_child *child, child_addr_t *scratch_page);
+int child_detach(struct ptrace_child *child, unsigned long scratch_page);
+int child_open(struct ptrace_child *child, unsigned long scratch_page, const char *file);
+int child_dup(struct ptrace_child *child, int file_fd, int orig_fd, int save_orig);
+
 #define __printf __attribute__((format(printf, 1, 2)))
 void __printf die(const char *msg, ...) __attribute__((noreturn));
 void __printf debug(const char *msg, ...);

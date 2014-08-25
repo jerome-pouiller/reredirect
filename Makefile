@@ -1,4 +1,4 @@
-override CFLAGS+=-Wall -Werror -D_GNU_SOURCE -g
+override CFLAGS+=-Wall -g
 OBJS=reptyr.o ptrace.o attach.o
 
 # Note that because of how Make works, this can be overriden from the
