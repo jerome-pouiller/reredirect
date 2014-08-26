@@ -35,32 +35,32 @@
 #endif
 
 static int verbose = 0;
-void usage();
 
-void _debug(const char *pfx, const char *msg, va_list ap) {
+static void usage() {
+    char *me = program_invocation_short_name;
+    fprintf(stderr, "Usage: %s [-m FILE|-o FILE|-e FILE|-O FD|-E FD] [-n STATUS_FILE] [-d] PID\n", me);
+    fprintf(stderr, "%s redirect outputs of a running process to a file.\n", me);
+    fprintf(stderr, "  PID      Process to reattach\n");
+    fprintf(stderr, "  -o FILE  File to redirect stdout. \n");
+    fprintf(stderr, "  -e FILE  File to redirect stderr.\n");
+    fprintf(stderr, "  -m FILE  Same than -o FILE -e FILE.\n");
+    fprintf(stderr, "  -O FD    Redirect stdout to this file descriptor. Mainly used to restore\n");
+    fprintf(stderr, "           process outputs.\n");
+    fprintf(stderr, "  -E FD    Redirect stderr to this file descriptor. Mainly used to restore\n");
+    fprintf(stderr, "           process outputs.\n");
+    fprintf(stderr, "  -N       Do not save previous stream.\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Notice you can redirect to another rogram using name pipe. For exemple:\n");
+    fprintf(stderr, "   mkfifo /tmp/fifo\n");
+    fprintf(stderr, "   tee /tmp/log < /tmp/fifo\n");
+    fprintf(stderr, "   %s PID -m /tmp/fifo\n", me);
+}
+
+static void _debug(const char *pfx, const char *msg, va_list ap) {
     if (pfx)
         fprintf(stderr, "%s", pfx);
     vfprintf(stderr, msg, ap);
     fprintf(stderr, "\n");
-}
-
-void usage_die(const char *msg, ...) {
-    va_list ap;
-    va_start(ap, msg);
-    _debug("[!] ", msg, ap);
-    va_end(ap);
-    usage();
-
-    exit(1);
-}
-
-void die(const char *msg, ...) {
-    va_list ap;
-    va_start(ap, msg);
-    _debug("[!] ", msg, ap);
-    va_end(ap);
-
-    exit(1);
 }
 
 void debug(const char *msg, ...) {
@@ -81,27 +81,26 @@ void error(const char *msg, ...) {
     va_end(ap);
 }
 
-void usage() {
-    char *me = program_invocation_short_name;
-    fprintf(stderr, "Usage: %s PID [-m FILE|-o FILE|-e FILE|-O FD|-E FD] [-n STATUS_FILE] [-d]\n", me);
-    fprintf(stderr, "%s redirect outputs of a running process to a file.\n", me);
-    fprintf(stderr, "  PID Process to reattach\n");
-    fprintf(stderr, "  -o FILE         File to redirect stdout. \n");
-    fprintf(stderr, "  -e FILE         File to redirect stderr.\n");
-    fprintf(stderr, "  -m FILE         Same than -o FILE -e FILE.\n");
-    fprintf(stderr, "  -O FD           Redirect stdout to this FD. Mainly used to restore process\n");
-    fprintf(stderr, "                  outputs.\n");
-    fprintf(stderr, "  -E FD           Redirect stderr to this FD. Mainly used to restore process\n");
-    fprintf(stderr, "                  outputs.\n");
-    fprintf(stderr, "  -N              Do not save previous stream.\n");
-    fprintf(stderr, "\n");
-    fprintf(stderr, "Notice you can redirect to another rogram using name pipe. For exemple:\n");
-    fprintf(stderr, "   mkfifo /tmp/fifo\n");
-    fprintf(stderr, "   tee /tmp/log < /tmp/fifo\n");
-    fprintf(stderr, "   %s PID -m /tmp/fifo\n", me);
+void die(const char *msg, ...) {
+    va_list ap;
+    va_start(ap, msg);
+    _debug("[!] ", msg, ap);
+    va_end(ap);
+
+    exit(1);
 }
 
-void check_yama_ptrace_scope(void) {
+void usage_die(const char *msg, ...) {
+    va_list ap;
+    va_start(ap, msg);
+    _debug("[!] ", msg, ap);
+    va_end(ap);
+    usage();
+
+    exit(1);
+}
+
+static void check_yama_ptrace_scope(void) {
     int fd = open("/proc/sys/kernel/yama/ptrace_scope", O_RDONLY);
     if (fd >= 0) {
         char buf[256];
