@@ -30,10 +30,6 @@
 #include <linux/limits.h>
 #include "reptyr.h"
 
-#ifndef __linux__
-#error reptyr is currently Linux-only.
-#endif
-
 static int verbose = 0;
 
 static void usage() {
