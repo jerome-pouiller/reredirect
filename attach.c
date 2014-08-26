@@ -99,26 +99,6 @@ int read_proc_stat(pid_t pid, struct proc_stat *out) {
     return err;
 }
 
-static int do_mmap(struct ptrace_child *child, child_addr_t *arg_addr, unsigned long len) {
-    int mmap_syscall = ptrace_syscall_numbers(child)->nr_mmap2;
-    child_addr_t addr;
-    if (mmap_syscall == -1)
-        mmap_syscall = ptrace_syscall_numbers(child)->nr_mmap;
-    addr = ptrace_remote_syscall(child, mmap_syscall, 0,
-                                         PAGE_SZ, PROT_READ|PROT_WRITE,
-                                         MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
-    if (addr > (unsigned long) -1000)
-        return -(signed long)addr;
-    *arg_addr = addr;
-    return 0;
-}
-
-static void do_unmap(struct ptrace_child *child, child_addr_t addr, unsigned long len) {
-    if (addr == (unsigned long)-1)
-        return;
-    do_syscall(child, munmap, addr, len, 0, 0, 0, 0);
-}
-
 int check_pgroup(pid_t target) {
     pid_t pg;
     DIR *dir;
@@ -165,6 +145,26 @@ int check_pgroup(pid_t target) {
  out:
     closedir(dir);
     return err;
+}
+
+static int do_mmap(struct ptrace_child *child, child_addr_t *arg_addr, unsigned long len) {
+    int mmap_syscall = ptrace_syscall_numbers(child)->nr_mmap2;
+    child_addr_t addr;
+    if (mmap_syscall == -1)
+        mmap_syscall = ptrace_syscall_numbers(child)->nr_mmap;
+    addr = ptrace_remote_syscall(child, mmap_syscall, 0,
+                                         PAGE_SZ, PROT_READ|PROT_WRITE,
+                                         MAP_ANONYMOUS|MAP_PRIVATE, 0, 0);
+    if (addr > (unsigned long) -1000)
+        return -(signed long)addr;
+    *arg_addr = addr;
+    return 0;
+}
+
+static void do_unmap(struct ptrace_child *child, child_addr_t addr, unsigned long len) {
+    if (addr == (unsigned long)-1)
+        return;
+    do_syscall(child, munmap, addr, len, 0, 0, 0, 0);
 }
 
 int child_attach(pid_t pid, struct ptrace_child *child, child_addr_t *scratch_page) {
