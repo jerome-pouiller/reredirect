@@ -75,6 +75,7 @@ int child_attach(pid_t pid, struct ptrace_child *child, child_addr_t *scratch_pa
 
 int child_detach(struct ptrace_child *child, child_addr_t scratch_page) {
     do_unmap(child, scratch_page, PAGE_SZ);
+    debug("Freed scratch page: %lx", scratch_page);
 
     ptrace_restore_regs(child);
     ptrace_detach_child(child);
@@ -93,22 +94,38 @@ int child_open(struct ptrace_child *child, child_addr_t scratch_page, const char
             scratch_page, O_RDWR|O_CREAT, 0666,
             0, 0, 0);
     if (child_fd < 0) {
-        error("Unable to open the tty in the child.");
+        error("Unable to open the file in the child.");
         return child_fd;
     }
 
-    debug("Opened the new tty in the child: %d", child_fd);
+    debug("Opened the new fd in the child: %d (%s)", child_fd, file);
     return child_fd;
 }
 
 int child_dup(struct ptrace_child *child, int file_fd, int orig_fd, int save_orig) {
     int save_fd = -1;
+    int err;
+
     if (save_orig)
         save_fd = do_syscall(child, dup,
                 orig_fd,
                 0, 0, 0, 0, 0);
-    do_syscall(child, dup2, file_fd, orig_fd, 0, 0, 0, 0);
-    do_syscall(child, close, file_fd, 0, 0, 0, 0, 0);
+    debug("Saved fd %d to %d in the child", orig_fd, save_fd);
+
+    err = do_syscall(child, dup2, file_fd, orig_fd, 0, 0, 0, 0);
+    if (err < 0) {
+        error("Unable to dup2 in the child.");
+        return save_fd;
+    }
+    debug("Duplicated fd %d to %d", file_fd, orig_fd);
+
+    err = do_syscall(child, close, file_fd, 0, 0, 0, 0, 0);
+    if (err < 0) {
+        error("Unable to close in the child.");
+        return save_fd;
+    }
+
+    debug("Closed fd %d", file_fd);
     return save_fd;
 }
 
