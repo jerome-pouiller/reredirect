@@ -19,23 +19,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#include <sys/types.h>
-#include <dirent.h>
-#include <sys/syscall.h>
-#include <sys/mman.h>
-#include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include <fcntl.h>
-#include <errno.h>
-#include <termios.h>
-#include <sys/ioctl.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <limits.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/stat.h>
+#include <sys/mman.h>
 
 #include "ptrace.h"
 #include "reptyr.h"

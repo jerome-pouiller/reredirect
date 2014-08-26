@@ -21,19 +21,12 @@
  * THE SOFTWARE.
  */
 #define _GNU_SOURCE
-#include <fcntl.h>
-#include <unistd.h>
-//#include <sys/types.h>
-//#include <sys/select.h>
-//#include <sys/ioctl.h>
 #include <stdlib.h>
-//#include <termios.h>
-#include <signal.h>
-
-#include <errno.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <linux/limits.h>
 #include "reptyr.h"
 
