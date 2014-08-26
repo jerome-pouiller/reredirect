@@ -185,7 +185,7 @@ int child_attach(pid_t pid, struct ptrace_child *child, child_addr_t *scratch_pa
 
     err = do_mmap(child, scratch_page, PAGE_SZ);
     if (err)
-	return err;
+        return err;
 
     debug("Allocated scratch page: %lx", *scratch_page);
     return 0;
@@ -203,16 +203,16 @@ int child_open(struct ptrace_child *child, unsigned long scratch_page, const cha
     int child_fd;
 
     if (ptrace_memcpy_to_child(child, scratch_page, file, strlen(file)+1)) {
-	error("Unable to memcpy the pty path to child.");
-	return child->error;
+        error("Unable to memcpy the pty path to child.");
+        return child->error;
     }
 
     child_fd = do_syscall(child, open,
-	    scratch_page, O_RDWR|O_CREAT, 0666,
-	    0, 0, 0);
+            scratch_page, O_RDWR|O_CREAT, 0666,
+            0, 0, 0);
     if (child_fd < 0) {
-	error("Unable to open the tty in the child.");
-	return child_fd;
+        error("Unable to open the tty in the child.");
+        return child_fd;
     }
 
     debug("Opened the new tty in the child: %d", child_fd);
@@ -222,9 +222,9 @@ int child_open(struct ptrace_child *child, unsigned long scratch_page, const cha
 int child_dup(struct ptrace_child *child, int file_fd, int orig_fd, int save_orig) {
     int save_fd = -1;
     if (save_orig)
-	save_fd = do_syscall(child, dup,
-                          orig_fd,
-                          0, 0, 0, 0, 0);
+        save_fd = do_syscall(child, dup,
+                orig_fd,
+                0, 0, 0, 0, 0);
     do_syscall(child, dup2, file_fd, orig_fd, 0, 0, 0, 0);
     do_syscall(child, close, file_fd, 0, 0, 0, 0, 0);
     return save_fd;

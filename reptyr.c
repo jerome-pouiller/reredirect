@@ -165,56 +165,56 @@ int main(int argc, char **argv) {
     struct ptrace_child child;
 
     while ((opt = getopt(argc, argv, "m:o:e:O:E:s:dNvh")) != -1) {
-	switch (opt) {
-	    case 'O':
-		if (fileo || fdo >= 0)
-		    usage_die("-m, -o and -O are exclusive\n");
-		fdo = atoi(optarg);
-		break;
-	    case 'E':
-		if (filee || fde >= 0)
-		    usage_die("-m, -e and -E are exclusive\n");
-		fde = atoi(optarg);
-		break;
-	    case 'o':
-		if (fileo || fdo >= 0)
-		    usage_die("-m, -o and -O are exclusive\n");
-		fileo = optarg;
-		break;
-	    case 'e':
-		if (filee || fde >= 0)
-		    usage_die("-m, -e and -E are exclusive\n");
-		filee = optarg;
-		break;
-	    case 'm':
-		if (filee || fde >= 0 || fileo || fdo >= 0)
-		    usage_die("-m is exclusive with  -o, -e, -O and -E\n");
-		fileo = filee = optarg;
-		break;
-	    case 'n':
-		strncpy(filestatus, optarg, sizeof(filestatus));
-		break;
-	    case 'N':
-		no_restore = 1;
-		break;
-	    case 'd':
-		new_pgrp = 1;
-		break;
-	    case 'h':
-		usage(argv[0]);
-		exit(0);
-		break;
-	    case 'v':
-		verbose = 1;
-		break;
-	    case 'V':
-		printf("This is reptyr version %s.\n", REPTYR_VERSION);
-		printf("http://github.com/nelhage/reptyr/\n");
-		exit(0);
-	    default: /* '?' */
-		usage_die("Unknown option\n");
-		break;
-	}
+        switch (opt) {
+            case 'O':
+                if (fileo || fdo >= 0)
+                    usage_die("-m, -o and -O are exclusive\n");
+                fdo = atoi(optarg);
+                break;
+            case 'E':
+                if (filee || fde >= 0)
+                    usage_die("-m, -e and -E are exclusive\n");
+                fde = atoi(optarg);
+                break;
+            case 'o':
+                if (fileo || fdo >= 0)
+                    usage_die("-m, -o and -O are exclusive\n");
+                fileo = optarg;
+                break;
+            case 'e':
+                if (filee || fde >= 0)
+                    usage_die("-m, -e and -E are exclusive\n");
+                filee = optarg;
+                break;
+            case 'm':
+                if (filee || fde >= 0 || fileo || fdo >= 0)
+                    usage_die("-m is exclusive with  -o, -e, -O and -E\n");
+                fileo = filee = optarg;
+                break;
+            case 'n':
+                strncpy(filestatus, optarg, sizeof(filestatus));
+                break;
+            case 'N':
+                no_restore = 1;
+                break;
+            case 'd':
+                new_pgrp = 1;
+                break;
+            case 'h':
+                usage(argv[0]);
+                exit(0);
+                break;
+            case 'v':
+                verbose = 1;
+                break;
+            case 'V':
+                printf("This is reptyr version %s.\n", REPTYR_VERSION);
+                printf("http://github.com/nelhage/reptyr/\n");
+                exit(0);
+            default: /* '?' */
+                usage_die("Unknown option\n");
+                break;
+        }
     }
 
     if (optind >= argc)
@@ -223,23 +223,23 @@ int main(int argc, char **argv) {
     pid = atoi(argv[optind]);
     err = child_attach(pid, &child, &scratch_page);
     if (err) {
-	fprintf(stderr, "Unable to attach to pid %d: %s\n", pid, strerror(err));
-	if (err == EPERM)
-	    check_yama_ptrace_scope();
-	exit(1);
+        fprintf(stderr, "Unable to attach to pid %d: %s\n", pid, strerror(err));
+        if (err == EPERM)
+            check_yama_ptrace_scope();
+        exit(1);
     }
     if (fileo)
-	fdo = child_open(&child, scratch_page, fileo);
+        fdo = child_open(&child, scratch_page, fileo);
     if (filee)
-	fde = child_open(&child, scratch_page, filee);
+        fde = child_open(&child, scratch_page, filee);
     if (fdo >= 0)
-	fdo_orig = child_dup(&child, fdo, 1, !no_restore);
+        fdo_orig = child_dup(&child, fdo, 1, !no_restore);
     if (fde >= 0)
-	fde_orig = child_dup(&child, fde, 2, !no_restore);
+        fde_orig = child_dup(&child, fde, 2, !no_restore);
     child_detach(&child, scratch_page);
 
     if (!no_restore)
-	write_status_file(filestatus, pid, fdo_orig, fde_orig);
+        write_status_file(filestatus, pid, fdo_orig, fde_orig);
 
     return 0;
 }
