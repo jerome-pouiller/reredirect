@@ -28,7 +28,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <linux/limits.h>
-#include "reptyr.h"
+#include "reredirect.h"
 
 static int verbose = 0;
 
@@ -167,8 +167,8 @@ int main(int argc, char **argv) {
                 verbose = 1;
                 break;
             case 'V':
-                printf("This is reptyr version %s.\n", REPTYR_VERSION);
-                printf("http://github.com/nelhage/reptyr/\n");
+                printf("This is reredirect version %s.\n", REREDIRECT_VERSION);
+                printf("http://github.com/jerome-pouiller/reredirect/\n");
                 exit(0);
             default: /* '?' */
                 usage_die("Unknown option\n");

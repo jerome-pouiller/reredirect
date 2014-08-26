@@ -1,5 +1,5 @@
 override CFLAGS+=-Wall -g
-OBJS=reptyr.o ptrace.o attach.o
+OBJS=reredirect.o ptrace.o attach.o
 
 # Note that because of how Make works, this can be overriden from the
 # command-line.
@@ -7,21 +7,19 @@ OBJS=reptyr.o ptrace.o attach.o
 # e.g. install to /usr with `make PREFIX=/usr`
 PREFIX=/usr/local
 
-all: reptyr
+all: reredirect
 
-reptyr: $(OBJS)
+reredirect: $(OBJS)
 
-attach.o: reptyr.h ptrace.h
-reptyr.o: reptyr.h
+attach.o: reredirect.h ptrace.h
+reredirect.o: reredirect.h
 ptrace.o: ptrace.h $(wildcard arch/*.h)
 
 clean:
-	rm -f reptyr $(OBJS)
+	rm -f reredirect $(OBJS)
 
-install: reptyr
+install: reredirect
 	install -d -m 755 $(DESTDIR)$(PREFIX)/bin/
-	install -m 755 reptyr $(DESTDIR)$(PREFIX)/bin/reptyr
+	install -m 755 reredirect $(DESTDIR)$(PREFIX)/bin/reredirect
 	install -d -m 755 $(DESTDIR)$(PREFIX)/share/man/man1
-	install -m 644 reptyr.1 $(DESTDIR)$(PREFIX)/share/man/man1/reptyr.1
-	install -d -m 755 $(DESTDIR)$(PREFIX)/share/man/fr/man1
-	install -m 644 reptyr.fr.1 $(DESTDIR)$(PREFIX)/share/man/fr/man1/reptyr.1
+	install -m 644 reredirect.1 $(DESTDIR)$(PREFIX)/share/man/man1/reredirect.1

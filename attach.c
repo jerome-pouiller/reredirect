@@ -25,7 +25,7 @@
 #include <sys/mman.h>
 
 #include "ptrace.h"
-#include "reptyr.h"
+#include "reredirect.h"
 
 #define PAGE_SZ sysconf(_SC_PAGE_SIZE)
 
