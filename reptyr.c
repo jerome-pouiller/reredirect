@@ -100,8 +100,6 @@ void usage() {
     fprintf(stderr, "                  outputs.\n");
     fprintf(stderr, "  -E FD           Redirect stderr to this FD. Mainly used to restore process\n");
     fprintf(stderr, "                  outputs.\n");
-    fprintf(stderr, "  -d              Create new process group before attaching PID. Necessary if\n");
-    fprintf(stderr, "                  if you call %s from a sub-process of PID.\n", me);
     fprintf(stderr, "  -n RESTORE_FILE Change name of script generated to restore process outputs.\n");
     fprintf(stderr, "                  Default is 'reptyr_PID.status'.\n");
     fprintf(stderr, "  -N              Do not save previous stream and do not create restore file.\n");
@@ -149,7 +147,6 @@ void write_status_file(char *file, pid_t pid, int fdo, int fde)
 
 
 int main(int argc, char **argv) {
-    int new_pgrp = 0;
     int no_restore = 0;
     int fde = -1;
     int fdo = -1;
@@ -196,9 +193,6 @@ int main(int argc, char **argv) {
                 break;
             case 'N':
                 no_restore = 1;
-                break;
-            case 'd':
-                new_pgrp = 1;
                 break;
             case 'h':
                 usage(argv[0]);
