@@ -1,5 +1,5 @@
-reredirect - A tool to idyamicly redirect outputs of a running program
-======================================================================
+reredirect - A tool to dynamically redirect outputs of a running program
+========================================================================
 
 reredirect is a utility for taking an existing running program and
 attaching its outputs (standard output and error output) to files or
