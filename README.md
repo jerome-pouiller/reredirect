@@ -1,60 +1,87 @@
-reptyr - A tool for "re-ptying" programs.
-=========================================
+reredirect - A tool to idyamicly redirect outputs of a running program
+======================================================================
 
-reptyr is a utility for taking an existing running program and
-attaching it to a new terminal. Started a long-running process over
-ssh, but have to leave and don't want to interrupt it? Just start a
-screen, use reptyr to grab it, and then kill the ssh session and head
-on home.
+reredirect is a utility for taking an existing running program and
+attaching its outputs (standard output and error output) to files or
+another process.
 
-USAGE
+Using reredirect, you can log output of a already launched process, redirect
+debug output of a background process to `/dev/null` or to a pager as if you 
+launched it with '>' or '|'.
+
+Usage
 -----
 
-    reptyr PID
+Simple usage is:
 
-"reptyr PID" will grab the process with id PID and attach it to your
-current terminal.
+    reredirect -m FILE PID
 
-After attaching, the process will take input from and write output to
-the new terminal, including ^C and ^Z. (Unfortunately, if you
-background it, you will still have to run "bg" or "fg" in the old
-terminal. This is likely impossible to fix in a reasonable way without
-patching your shell.)
+It will redirect outputs of PID to FILE. It is also possible to redirect standard
+output and error output in different files:
 
-"But wait, isn't this just screenify?"
---------------------------------------
+    reredirect -o FILE1 -e FILE2 PID
 
-There's a shell script called "screenify" that's been going around the
-internet for nigh on 10 years now that uses gdb to (supposedly)
-accomplish the same thing. The difference is that reptyr works much,
-much, better.
+`-m` option is just a shortcut to `-o FILE -e FILE`.
 
-If you attach a "less" using screenify, it will still take input from
-the old terminal. If you attach an ncurses program using screenify,
-and resize the window, your program won't notice. If you attach a
-process with screenify, ^C in the new terminal won't work.
+After launched, reredirect, give you command to restore state of PID.
+It will looks like:
 
-reptyr fixes all of these problems, and is the only such tool I know
-of that does so. See below for some more details on how it
-accomplishes this.
+    reredirect -N -O 5 -E 3 5453
 
-PORTABILITY
+`-O` and `-E` act as `-o` and `-e` but with already opened file descriptors in
+PID. They only used to restore previous state of PID.
+
+Redirect to a command
+---------------------
+
+`reredirect` can redirect outputs to special files as `/dev/null`. It can also
+redirect outputs to "named pipes". Using "named pipes", you can redirect output 
+of your target to another command (as a normal pipe):
+
+First create a named pipe:
+
+    mkfifo /tmp/myfifo
+
+Run `reredirect` to redirect your target to /tmp/myfifo:
+
+    reredirect -m /tmp/myfifo PID
+
+Launch a command on this named pipe:
+
+    less < /tmp/myfifo
+    tee my_log < /tmp/myfifo
+    cat -n < /tmp/myfifo
+
+
+Trick with Makefile
+---------------------
+
+Sometime, I work with complex projects and I want to log subparts of compilation
+output in different files. I use this trick:
+
+    target:
+    	@FIFO=$$(mktemp -u); mkfifo $$FIFO; tee my_file.log < $$FIFO & ./redirect -m $$FIFO $$PPID > ./restore_$$PPID.cmd
+    	@echo Call sub makefile here
+    	@sh ./restore_$$PPID.cmd
+    	@echo No more in log file
+
+Portability
 -----------
 
-reptyr is Linux-only. It uses ptrace to attach to the target and control it at
+reredirect is Linux-only. It uses ptrace to attach to the target and control it at
 the syscall level, so it is highly dependent on Linux's particular syscall API,
 syscalls, and terminal ioctl()s. A port to Solaris or BSD may be technically
 feasible, but would probably require significant re-architecting to abstract out
 the platform-specific bits.
 
-reptyr works on i386, x86_64, and ARM. Ports to other architectures should be
+reredirect works on i386, x86_64, and ARM. Ports to other architectures should be
 straightforward, and should in most cases be as simple as adding an arch/ARCH.h
 file and adding a clause to the ifdef ladder in ptrace.c.
 
 ptrace_scope on Ubuntu Maverick and up
 --------------------------------------
 
-`reptyr` depends on the `ptrace` system call to attach to the remote program. On
+`redirect` depends on the `ptrace` system call to attach to the remote program. On
 Ubuntu Maverick and higher, this ability is disabled by default for security
 reasons. You can enable it temporarily by doing
 
@@ -63,39 +90,22 @@ reasons. You can enable it temporarily by doing
 as root, or permanently by editing the file /etc/sysctl.d/10-ptrace.conf, which
 also contains more information about exactly what this setting accomplishes.
 
-reptyr -l
----------
-
-As a bonus feature, if you run "reptyr -l", reptyr will create a new
-pseudo-terminal pair with nothing attached to the slave end, and print
-its name out.
-
-If you are debugging a program in gdb, you can pass that name to "set
-inferior-pty". Because there is no existing program listening to that
-tty, this will work much better than passing an existing shell's
-terminal.
-
 How does it work?
 -----------------
 
-The main thing that reptyr does that no one else does is that it
-actually changes the controlling terminal of the process you are
-attaching. I wrote a
-[blog post](https://blog.nelhage.com/2011/02/changing-ctty/)
-explaining just what the shenanigans involved are.
+Reredirect act as a debugger to take control of running process (it use ptrace 
+syscall). Once it took control of runnign process, it use classical calls to 
+`dup`, and `dup2` to change targets of file descriptors 1 and 2.
 
-PRONUNCIATION
--------------
-
-I pronounce it like "repeater", but since that's easily ambiguous,
-"re-P-T-Y-er" is also acceptable.
-
-
-CREDITS
+Credits
 -------
-reptyr was written by Nelson Elhage <nelhage@nelhage.com>. Contact him
-with any questions or bug reports.
+
+reredirect was mainly written by Jérôme Pouiller <jezz@sysmic.org>. You can
+contact hom for any questions or bug reports.
+
+reredirect (and especially all ptrace layer) is based on reptyr programm. reptyr 
+was written by Nelson Elhage <nelhage@nelhage.com>.
 
 URL
 ---
-[http://github.com/nelhage/reptyr]()
+[http://github.com/jerome-pouiller/reredirect]()

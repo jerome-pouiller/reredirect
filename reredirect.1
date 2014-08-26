@@ -1,93 +1,102 @@
 .mso www.tmac
-.TH reptyr 1 "03 Feb 2011"
+.TH reredirect 1 "26 Aug 2014"
 .SH NAME
-reptyr \- Reparent a running program to a new terminal
+reredirect \- Tool to dynamicly redirect outputs of a running process
 .SH SYNOPSIS
-.B reptyr
+.B reredirect [-m
+.I FILE
+.B |-o
+.I FILE
+.B |-e
+.I FILE
+.B |-O
+.I FD
+.B |-E
+.I FD
+.B ] [-N] [-d]
 .I PID
-
-.B reptyr \-l|\-L [COMMAND [ARGS]]
 
 .SH DESCRIPTION
 
-.B reptyr
+.B reredirect
 is a utility for taking an existing running program and
-attaching it to a new terminal. Started a long-running process over
-ssh, but have to leave and don't want to interrupt it? Just start a
-screen, use
-.B reptyr
-to grab it, and then kill the ssh session and head
-on home.
-.LP
-.B reptyr
-works by attaching to the target program using
-.BR ptrace (2),
-redirecting relevant file descriptors, and changing the program's controlling
-terminal (See
-.BR tty (4))
-It is this last detail that makes
-.B reptyr
-work much better than alternatives such as
-.BR retty (1).
+attaching its outputs (standard output and error output) to files or
+another process.
 
-.LP
-After attaching a program, the program will appear to be either backgrounded or
-suspended to the shell it was launched from (depending on the shell). For
-maximal safety you can run
-.IP
-bg; disown
-.LP
+Simple usage is:
 
-in the old shell to remove the association with the program, but
-.B reptyr
-will attempt to ensure that the target program remains running even if you close
-the shell without doing so.
+    reredirect -m FILE PID
+
+It will redirect outputs of 
+.I PID
+to 
+.I FILE.
+It is also possible to redirect standard
+output and error output in different files:
+
+    reredirect -o FILE1 -e FILE2 PID
+
+.B \-m
+option is just a shortcut to 
+.B \-o FILE \-e FILE
+
+After launched, reredirect, give you command to restore state of 
+.I PID.
+It will looks like:
+
+    reredirect -N -O 5 -E 3 5453
+
+.B \-O
+and 
+.B \-E
+act as 
+.B \-o 
+and 
+.B \-e 
+but with already opened file descriptors in
+.I PID.
+They only used to restore previous state of 
+.I PID.
+
+
 
 .SH OPTIONS
 
-.B \-l, \-L [COMMAND [ARGS]]
+.B \-o FILE
 .IP
-Instead of attaching to a new process, create a new pty pair, proxy the master
-end to the current terminal, and then print the name of the slave pty. This can
-be passed to e.g.
-.B gdb\'s
-.I set inferior-tty
-option.
-
-If an optional
-.B COMMAND
-and
-.B ARGS
-are passed in conjunction with
-.B -l,
-that command will be executed as a child of
-.B reptyr
-with the
-.B REPTYR_PTY
-environment variable set to the name of the slave pty. If
-.B -L
-is used instead of
-.B -l,
-then fds 0-2 of the child will also be redirected to point to the
-slave, and the child will be run in a fresh session with the slave as
-its controlling terminal.
+File to redirect stdout
 .LP
 
-.B \-s
+.B \-e FILE
 .IP
-
-By default, reptyr will move any file descriptors in the target that were
-connected to the target's controlling terminal to point to the new terminal. The
-.B -s
-option will cause reptyr to unconditionally attach file descriptors 0, 1, and 2
-in the target, even if the target has no controlling terminal or they are not
-connected to a terminal.
+File to redirect stderr
 .LP
 
-.B \-v
+.B \-m FILE
+.IP
+Same than 
+.B \-o FILE \-e FILE
+.LP
+
+.B \-O FD
+.IP
+Redirect stdout to this file descriptor. Mainly used to restore process outputs
+.LP
+
+.B \-E FD
+.IP
+Redirect stderr to this file descriptor. Mainly used to restore process outputs
+.LP
+
+.B \-N
+.IP
+Do not save previous stream
+.LP
+
+.B \-V
 .IP
 Print the version of
-.B reptyr
+.B reredirect
 and exit.
 .LP
 
@@ -96,14 +105,14 @@ and exit.
 Print a usage message and exit.
 .LP
 
-.B \-V
+.B \-v
 .IP
 Print verbose debug output while running.
 .LP
 
 .SH NOTES
 
-.B reptyr
+.B reredirect
 depends on the
 .BR ptrace (2)
 system call to attach to the remote program. On Ubuntu Maverick and higher, this
@@ -118,47 +127,18 @@ which also contains more information about this setting.
 
 .SH BUGS
 
-When attaching to some curses programs, they will not redraw the screen right
-away, and a
-.B ^L
-or similar will be needed to force a redraw.
-
-Similarly, after attaching to certain programs, the old terminal will be left in
-an odd state, and a
-.B clear
-or even
-.B reset
-may be required before the old terminal is usable again.
-
-Attaching to rtorrent (and probably some other apps) doesn't work right
-(rtorrent stops accepting input) (The problem is that rtorrent is using epoll to
-poll stdin, and we don't update the internal reference that the epoll fd has to
-the old tty).
-
-Attaching to a process with children doesn't work right. This should be possible
-to fix -- I just need to ptrace each child individually and do the same games to
-it.
-
-Attaching a
-.BR less (1)
-process doesn't work if you have a
-.I .lessfilter
-file, as
-.BR less
-leaves around a zombie child in this case. This could be worked around.
-
 Bugs should be reported to the author (see below) or via the issue tracker on
 GitHub.
 
 .SH AUTHORS
 
-reptyr was written by Nelson Elhage <nelhage@nelhage.com>.
+reredirect was mainly written by Jérôme Pouiller <jezz@sysmic.org>. You can
+contact hom for any questions or bug reports.
+
+reredirect (and especially all ptrace layer) is based on reptyr programm. reptyr 
+was written by Nelson Elhage <nelhage@nelhage.com>.
 
 .SH HOMEPAGE
 
-.URL https://github.com/nelhage/reptyr
+.URL http://github.com/jerome-pouiller/reredirect
 
-.SH SEE ALSO
-
-.BR neercs (1),
-.BR screen (1)
