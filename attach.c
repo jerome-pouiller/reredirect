@@ -72,7 +72,7 @@ int child_attach(pid_t pid, struct ptrace_child *child, child_addr_t *scratch_pa
     return 0;
 }
 
-int child_detach(struct ptrace_child *child, unsigned long scratch_page) {
+int child_detach(struct ptrace_child *child, child_addr_t scratch_page) {
     do_unmap(child, scratch_page, PAGE_SZ);
 
     ptrace_restore_regs(child);
@@ -80,7 +80,7 @@ int child_detach(struct ptrace_child *child, unsigned long scratch_page) {
     return 0;
 }
 
-int child_open(struct ptrace_child *child, unsigned long scratch_page, const char *file) {
+int child_open(struct ptrace_child *child, child_addr_t scratch_page, const char *file) {
     int child_fd;
 
     if (ptrace_memcpy_to_child(child, scratch_page, file, strlen(file)+1)) {
