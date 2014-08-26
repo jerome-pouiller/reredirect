@@ -89,15 +89,11 @@ void usage() {
     fprintf(stderr, "  -o FILE         File to redirect stdout. \n");
     fprintf(stderr, "  -e FILE         File to redirect stderr.\n");
     fprintf(stderr, "  -m FILE         Same than -o FILE -e FILE.\n");
-    fprintf(stderr, "  -O FD           Redirect stdout to this FD. Mainly used \tore process");
+    fprintf(stderr, "  -O FD           Redirect stdout to this FD. Mainly used to restore process\n");
     fprintf(stderr, "                  outputs.\n");
     fprintf(stderr, "  -E FD           Redirect stderr to this FD. Mainly used to restore process\n");
     fprintf(stderr, "                  outputs.\n");
-    fprintf(stderr, "  -n RESTORE_FILE Change name of script generated to restore process outputs.\n");
-    fprintf(stderr, "                  Default is 'reptyr_PID.status'.\n");
-    fprintf(stderr, "  -N              Do not save previous stream and do not create restore file.\n");
-    fprintf(stderr, "\n");
-    fprintf(stderr, "Launch ./RESTORE_FILE to restore application outputs\n");
+    fprintf(stderr, "  -N              Do not save previous stream.\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Notice you can redirect to another rogram using name pipe. For exemple:\n");
     fprintf(stderr, "   mkfifo /tmp/fifo\n");
@@ -124,21 +120,6 @@ void check_yama_ptrace_scope(void) {
     fprintf(stderr, "For more information, see /etc/sysctl.d/10-ptrace.conf\n");
 }
 
-void write_status_file(char *file, pid_t pid, int fdo, int fde)
-{
-    char buf[255];
-    int fd;
-    snprintf(buf, sizeof(buf), "#!/bin/sh\n\n%s -N -O %d -E %d %d\n", program_invocation_name, fdo, fde, pid);
-    if (!strlen(file))
-	snprintf(file, PATH_MAX, "reptyr_%d.status", pid);
-    fd = open(file, O_WRONLY | O_CREAT, 0777);
-    if (fd < 0)
-	usage_die("Cannot open %s\n", file);
-    write(fd, buf, strlen(buf));
-    close(fd);
-}
-
-
 int main(int argc, char **argv) {
     int no_restore = 0;
     int fde = -1;
@@ -147,7 +128,6 @@ int main(int argc, char **argv) {
     int fdo_orig = -1;
     const char *fileo = NULL;
     const char *filee = NULL;
-    char filestatus[PATH_MAX] = "";
     pid_t pid;
     int opt;
     int err;
@@ -180,9 +160,6 @@ int main(int argc, char **argv) {
                 if (filee || fde >= 0 || fileo || fdo >= 0)
                     usage_die("-m is exclusive with  -o, -e, -O and -E\n");
                 fileo = filee = optarg;
-                break;
-            case 'n':
-                strncpy(filestatus, optarg, sizeof(filestatus));
                 break;
             case 'N':
                 no_restore = 1;
@@ -225,8 +202,10 @@ int main(int argc, char **argv) {
         fde_orig = child_dup(&child, fde, 2, !no_restore);
     child_detach(&child, scratch_page);
 
-    if (!no_restore)
-        write_status_file(filestatus, pid, fdo_orig, fde_orig);
+    if (!no_restore) {
+        printf("# Previous satte saved. To restore, use:\n");
+        printf("%s -N -O %d -E %d %d\n", program_invocation_name, fdo_orig, fde_orig, pid);
+    }
 
     return 0;
 }
