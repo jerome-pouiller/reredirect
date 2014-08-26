@@ -97,6 +97,20 @@ Reredirect act as a debugger to take control of running process (it use ptrace
 syscall). Once it took control of runnign process, it use classical calls to 
 `dup`, and `dup2` to change targets of file descriptors 1 and 2.
 
+Basicly, to redirect to file, this pseudo code is executed:
+
+    orig_fd = 1;
+    save_fd = dup(1);
+    new_fd = open(file, O_WRONLY | O_CREAT, 0666);
+    dup2(new_fd, orig_fd);
+    close(new_fd);
+
+and to restore state:
+
+    ret = dup2(save_fd, orig_fd);
+    close(save_fd);
+
+
 Credits
 -------
 
