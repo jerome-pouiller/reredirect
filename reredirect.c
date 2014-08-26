@@ -34,7 +34,7 @@ static int verbose = 0;
 
 static void usage() {
     char *me = program_invocation_short_name;
-    fprintf(stderr, "Usage: %s [-m FILE|-o FILE|-e FILE|-O FD|-E FD] [-n STATUS_FILE] [-d] PID\n", me);
+    fprintf(stderr, "Usage: %s [-m FILE|-o FILE|-e FILE|-O FD|-E FD] [-N] [-d] PID\n", me);
     fprintf(stderr, "%s redirect outputs of a running process to a file.\n", me);
     fprintf(stderr, "  PID      Process to reattach\n");
     fprintf(stderr, "  -o FILE  File to redirect stdout. \n");
