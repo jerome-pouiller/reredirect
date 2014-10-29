@@ -100,9 +100,8 @@ int child_open(struct ptrace_child *child, child_addr_t scratch_page, const char
         return child->error;
     }
 
-    child_fd = do_syscall(child, open,
-            scratch_page, O_RDWR|O_CREAT, 0666,
-            0, 0, 0);
+    child_fd = do_syscall(child, open, scratch_page,
+                          O_RDWR | O_CREAT, 0666, 0, 0, 0);
     if (child_fd < 0) {
         error("Unable to open the file in the child.");
         return child_fd;
@@ -117,9 +116,7 @@ int child_dup(struct ptrace_child *child, int file_fd, int orig_fd, int save_ori
     int err;
 
     if (save_orig)
-        save_fd = do_syscall(child, dup,
-                orig_fd,
-                0, 0, 0, 0, 0);
+        save_fd = do_syscall(child, dup, orig_fd, 0, 0, 0, 0, 0);
     debug("Saved fd %d to %d in the child", orig_fd, save_fd);
 
     err = do_syscall(child, dup2, file_fd, orig_fd, 0, 0, 0, 0);
