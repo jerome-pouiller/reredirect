@@ -23,6 +23,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <limits.h>
 
 #include "ptrace.h"
 #include "reredirect.h"
@@ -84,8 +85,17 @@ int child_detach(struct ptrace_child *child, child_addr_t scratch_page) {
 
 int child_open(struct ptrace_child *child, child_addr_t scratch_page, const char *file) {
     int child_fd;
+    char buf[PATH_MAX + 1];
 
-    if (ptrace_memcpy_to_child(child, scratch_page, file, strlen(file)+1)) {
+    if (file[0] == '/') {
+        strncpy(buf, file, sizeof(buf));
+    } else {
+        getcwd(buf, sizeof(buf));
+        strncat(buf, "/", sizeof(buf));
+        strncat(buf, file, sizeof(buf));
+    }
+
+    if (ptrace_memcpy_to_child(child, scratch_page, buf, strlen(buf) + 1)) {
         error("Unable to memcpy the pty path to child.");
         return child->error;
     }
