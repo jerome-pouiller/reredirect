@@ -9,6 +9,20 @@ Using reredirect, you can log output of a already launched process, redirect
 debug output of a background process to `/dev/null` or to a pager as if you 
 launched it with `>` or `|`.
 
+Installation
+------------
+
+With [clib](https://github.com/clibs/clib):
+
+    $ clib install jerome-pouiller/reredirect
+
+or from source:
+
+    $ git clone https://github.com/jerome-pouiller/reredirect.git
+    $ cd reredirect
+    $ make
+    $ make install
+
 Usage
 -----
 
