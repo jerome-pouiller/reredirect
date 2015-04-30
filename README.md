@@ -1,12 +1,12 @@
-reredirect - A tool to dynamically redirect outputs of a running program
+`reredirect` - A tool to dynamically redirect outputs of a running program
 ========================================================================
 
-reredirect is a utility for taking an existing running program and
+`reredirect` is a utility for taking an existing running program and
 attaching its outputs (standard output and error output) to files or
 another process.
 
-Using reredirect, you can log output of a already launched process, redirect
-debug output of a background process to `/dev/null` or to a pager as if you 
+Using `reredirect`, you can log output of a already launched process, redirect
+debug output of a background process to `/dev/null` or to a pager as if you
 launched it with `>` or `|`.
 
 Usage
@@ -31,6 +31,11 @@ It will looks like:
 `-O` and `-E` act as `-o` and `-e` but with already opened file descriptors in
 PID. They only used to restore previous state of PID.
 
+Without `-N`, `reredirect` keep previous outputs opened which allow you to
+restore them. This will produce file descriptor leak if you are you call
+`reredirect` multiple times. You can use `-N` to close and forget previous
+outputs. For example:
+
 Redirect to a command
 ---------------------
 
@@ -51,7 +56,6 @@ Launch a command on this named pipe:
     less < /tmp/myfifo
     tee my_log < /tmp/myfifo
     cat -n < /tmp/myfifo
-
 
 Trick with Makefile
 ---------------------
