@@ -34,7 +34,7 @@ PID. They only used to restore previous state of PID.
 Without `-N`, `reredirect` keep previous outputs opened which allow you to
 restore them. This will produce file descriptor leak if you are you call
 `reredirect` multiple times. You can use `-N` to close and forget previous
-outputs. For example:
+outputs.
 
 Redirect to a command
 ---------------------
