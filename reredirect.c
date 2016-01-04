@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
     child_detach(&child, scratch_page);
 
     if (!no_restore) {
-        printf("# Previous satte saved. To restore, use:\n");
+        printf("# Previous state saved. To restore, use:\n");
         printf("%s -N -O %d -E %d %d\n", program_invocation_name, fdo_orig, fde_orig, pid);
     }
 
