@@ -36,12 +36,26 @@ restore them. This will produce file descriptor leak if you are you call
 `reredirect` multiple times. You can use `-N` to close and forget previous
 outputs.
 
-Redirect to a command
----------------------
+Redirect to your terminal or a command
+--------------------------------------
 
-`reredirect` can redirect outputs to special files as `/dev/null`. It can also
-redirect outputs to "named pipes". Using "named pipes", you can redirect output 
-of your target to another command (as a normal pipe):
+This package also provide an utility called `relink` that allow to redirect
+outputs to current terminal. When `relink` exit (with Ctrl+C for exemple)
+original state is restored and command is detached.
+
+For exemple:
+
+    relink 5453
+    relink 5453 | grep usefull_line
+
+`relink` maintains stderr from original command to stderr. So you can do things
+like:
+
+    relink 5453 > /dev/null
+
+Internally, `relink` is just a small shell script that create necessary context
+and call `reredirect` as necessary. It use "named pipes". Using "named pipes",
+you can redirect output of your target to another command (as a normal pipe):
 
 First create a named pipe:
 
@@ -56,6 +70,10 @@ Launch a command on this named pipe:
     less < /tmp/myfifo
     tee my_log < /tmp/myfifo
     cat -n < /tmp/myfifo
+
+Note that `relink` only redirect outputs. The target process keep its original
+terminal. So if you type Ctrl+Z or CTRL+C, they are not sent to target process.
+If you want to do that, you check `reptyr` command from Nelson Elhage.
 
 Trick with Makefile
 ---------------------

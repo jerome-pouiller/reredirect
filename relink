@@ -1,0 +1,54 @@
+#!/bin/sh
+# vim: set sw=4 expandtab:
+#
+# Licence: GPL
+# Created: 2017-11-28 17:42:49+01:00
+# Main authors:
+#     - Jérôme Pouiller <jezz@sysmic.org>
+#
+
+usage() {
+    echo 'Usage: relink PID'
+    echo 'Redirect outputs of a running program as if it was output of this command.'
+    echo 'On exit, this script automatically detach from PID, original output of PID'
+    echo 'is restored, and PID continue to run normaly'
+    echo
+    echo 'Exemples:'
+    echo '  relink $(pidof dhclient)'
+    echo '  relink $(pidof dhclient) | grep usefull_line'
+}
+
+# detach
+atexit() {
+  sh $RESTORE_SCRIPT
+  rm $RESTORE_SCRIPT
+  # Note: no need to kill 'cat'
+  rm $FIFO_OUT
+  rm $FIFO_ERR
+  exit 0
+}
+trap atexit INT
+
+if [ "$#" -ne 1 ]; then
+    usage
+    exit 1
+fi
+
+PID=$1
+FIFO_OUT=$(mktemp -u)
+FIFO_ERR=$(mktemp -u)
+RESTORE_SCRIPT=$(mktemp -u)
+mkfifo $FIFO_OUT
+mkfifo $FIFO_ERR
+cat $FIFO_ERR >&2 &
+cat $FIFO_OUT &
+CAT_PID=$!
+reredirect -o $FIFO_OUT -e $FIFO_ERR $PID > $RESTORE_SCRIPT || atexit
+wait $CAT_PID
+
+# $PID has stopped
+rm $RESTORE_SCRIPT
+rm $FIFO_OUT
+rm $FIFO_ERR
+exit 0
+

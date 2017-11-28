@@ -18,8 +18,9 @@ ptrace.o: ptrace.h $(wildcard arch/*.h)
 clean:
 	rm -f reredirect $(OBJS)
 
-install: reredirect
+install: reredirect relink
 	install -d -m 755 $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 reredirect $(DESTDIR)$(PREFIX)/bin/reredirect
+	install -m 755 relink $(DESTDIR)$(PREFIX)/bin/relink
 	install -d -m 755 $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 644 reredirect.1 $(DESTDIR)$(PREFIX)/share/man/man1/reredirect.1
