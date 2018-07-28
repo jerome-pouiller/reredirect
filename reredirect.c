@@ -46,7 +46,7 @@ static void usage() {
     fprintf(stderr, "           process outputs.\n");
     fprintf(stderr, "  -N       Do not save previous stream.\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "Notice you can redirect to another rogram using name pipe. For exemple:\n");
+    fprintf(stderr, "Notice you can redirect to another program using name pipe. For example:\n");
     fprintf(stderr, "   mkfifo /tmp/fifo\n");
     fprintf(stderr, "   tee /tmp/log < /tmp/fifo\n");
     fprintf(stderr, "   %s PID -m /tmp/fifo\n", me);
