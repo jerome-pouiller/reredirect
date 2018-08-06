@@ -1,0 +1,9 @@
+{
+  "name": "reredirect",
+  "version": "0.1",
+  "repo": "jerome-pouiller/reredirect",
+  "description": "Tool to dynamicly redirect outputs of a running process",
+  "keywords": ["reredirect", "output", "process"],
+  "install": "make && make install"
+}
+
