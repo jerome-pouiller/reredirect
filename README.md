@@ -124,7 +124,7 @@ Basicly, to redirect to file, this pseudo code is executed:
     orig_fd = 1;
     save_fd = dup(1);
     new_fd = open(file, O_WRONLY | O_CREAT, 0666);
-    dup2(new_fd, orig_fd);
+    dup2(orig_fd, new_fd);
     close(new_fd);
 
 and to restore state:
