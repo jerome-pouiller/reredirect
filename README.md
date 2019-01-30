@@ -15,6 +15,7 @@ Usage
 Simple usage is:
 
     reredirect -m FILE PID
+    reredirect -f FD:FILE PID
 
 It will redirect outputs of PID to FILE. It is also possible to redirect standard
 output and error output in different files:
