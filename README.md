@@ -9,6 +9,17 @@ Using `reredirect`, you can log output of a already launched process, redirect
 debug output of a background process to `/dev/null` or to a pager as if you
 launched it with `>` or `|`.
 
+Installation
+------------
+
+Installation uses common rules for C projects. Compile with:
+
+    make
+
+Then, install with:
+
+    sudo make install
+
 Usage
 -----
 
