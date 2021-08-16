@@ -1,10 +1,8 @@
 #!/bin/sh
 # vim: set sw=4 expandtab:
 #
-# Licence: GPL
-# Created: 2017-11-28 17:42:49+01:00
-# Main authors:
-#     - Jérôme Pouiller <jezz@sysmic.org>
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright 2017, Jérôme Pouiller <jerome.pouiller@gmail.com>
 #
 
 usage() {
