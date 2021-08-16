@@ -1,3 +1,12 @@
+* 0.3 (Aug 16, 2021)
+ - Update install instructions in README
+ - Update ChangeLog
+ - Fix license of relink
+
+* 0.2 (Nov 28, 2017)
+ - Add script 'relink'
+ - Fix compilation for amd64
+
 * 0.1 (Aug 26, 2014)
  - Initial release. Fork from reptyr
 
