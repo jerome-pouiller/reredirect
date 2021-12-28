@@ -23,7 +23,7 @@
      .nr_signal = -1,
 #endif
     SC(rt_sigaction),
-    SC(open),
+    SC(openat),
     SC(close),
     SC(ioctl),
     SC(dup2),

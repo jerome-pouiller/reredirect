@@ -74,7 +74,7 @@ struct syscall_numbers {
     long nr_wait4;
     long nr_signal;
     long nr_rt_sigaction;
-    long nr_open;
+    long nr_openat;
     long nr_close;
     long nr_ioctl;
     long nr_dup;

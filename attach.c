@@ -100,8 +100,8 @@ int child_open(struct ptrace_child *child, child_addr_t scratch_page, const char
         return child->error;
     }
 
-    child_fd = do_syscall(child, open, scratch_page,
-                          O_RDWR | O_CREAT, 0666, 0, 0, 0);
+    child_fd = do_syscall(child, openat, AT_FDCWD, scratch_page,
+                          O_RDWR | O_CREAT, 0666, 0, 0);
     if (child_fd < 0) {
         error("Unable to open the file in the child.");
         return child_fd;
