@@ -36,6 +36,12 @@
 
 #include "ptrace.h"
 
+#if defined(__GLIBC__)
+#  define PTRACE_REQUEST_TYPE enum __ptrace_request
+#else
+#  define PTRACE_REQUEST_TYPE int
+#endif
+
 /*
  * RHEL 5's kernel supports these flags, but their libc doesn't ship a ptrace.h
  * that defines them. Define them here, and if our kernel doesn't support them,
@@ -58,7 +64,7 @@
 	typeof(y) _min2 = (y);			\
 	_min1 < _min2 ? _min1 : _min2; })
 
-static long __ptrace_command(struct ptrace_child *child, enum __ptrace_request req,
+static long __ptrace_command(struct ptrace_child *child, PTRACE_REQUEST_TYPE req,
                              void *, void*);
 
 #define ptrace_command(cld, req, ...) _ptrace_command(cld, req, ## __VA_ARGS__, NULL, NULL)
@@ -304,7 +310,7 @@ int ptrace_memcpy_from_child(struct ptrace_child *child, void *dst, child_addr_t
     return 0;
 }
 
-static long __ptrace_command(struct ptrace_child *child, enum __ptrace_request req,
+static long __ptrace_command(struct ptrace_child *child, PTRACE_REQUEST_TYPE req,
                              void *addr, void *data) {
     long rv;
     errno = 0;
