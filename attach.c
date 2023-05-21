@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -88,11 +89,10 @@ int child_open(struct ptrace_child *child, child_addr_t scratch_page, const char
     char buf[PATH_MAX + 1];
 
     if (file[0] == '/') {
-        strncpy(buf, file, sizeof(buf));
+        snprintf(buf, sizeof(buf), "%s", file);
     } else {
         getcwd(buf, sizeof(buf));
-        strncat(buf, "/", sizeof(buf));
-        strncat(buf, file, sizeof(buf));
+        snprintf(buf + strlen(buf), sizeof(buf), "/%s", file);
     }
 
     if (ptrace_memcpy_to_child(child, scratch_page, buf, strlen(buf) + 1)) {
