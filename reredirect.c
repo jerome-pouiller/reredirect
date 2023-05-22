@@ -36,15 +36,16 @@ static void usage() {
     char *me = program_invocation_short_name;
     fprintf(stderr, "Usage: %s [-m FILE|-o FILE|-e FILE|-O FD|-E FD] [-N] [-d] PID\n", me);
     fprintf(stderr, "%s redirect outputs of a running process to a file.\n", me);
-    fprintf(stderr, "  PID      Process to reattach\n");
-    fprintf(stderr, "  -o FILE  File to redirect stdout. \n");
-    fprintf(stderr, "  -e FILE  File to redirect stderr.\n");
-    fprintf(stderr, "  -m FILE  Same than -o FILE -e FILE.\n");
-    fprintf(stderr, "  -O FD    Redirect stdout to this file descriptor. Mainly used to restore\n");
-    fprintf(stderr, "           process outputs.\n");
-    fprintf(stderr, "  -E FD    Redirect stderr to this file descriptor. Mainly used to restore\n");
-    fprintf(stderr, "           process outputs.\n");
-    fprintf(stderr, "  -N       Do not save previous stream.\n");
+    fprintf(stderr, "  PID         Process to reattach\n");
+    fprintf(stderr, "  -o FILE     File to redirect stdout. \n");
+    fprintf(stderr, "  -e FILE     File to redirect stderr.\n");
+    fprintf(stderr, "  -m FILE     Same than -o FILE -e FILE.\n");
+    fprintf(stderr, "  -f FD:FILE  Redirect fd to file.\n");
+    fprintf(stderr, "  -O FD       Redirect stdout to this file descriptor. Mainly used to restore\n");
+    fprintf(stderr, "              process outputs.\n");
+    fprintf(stderr, "  -E FD       Redirect stderr to this file descriptor. Mainly used to restore\n");
+    fprintf(stderr, "              process outputs.\n");
+    fprintf(stderr, "  -N          Do not save previous stream.\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Notice you can redirect to another program using name pipe. For example:\n");
     fprintf(stderr, "   mkfifo /tmp/fifo\n");
@@ -119,17 +120,20 @@ int main(int argc, char **argv) {
     int no_restore = 0;
     int fde = -1;
     int fdo = -1;
+    int fdf = -1;
+    int fdf_userinput = -1;
     int fde_orig = -1;
     int fdo_orig = -1;
     const char *fileo = NULL;
     const char *filee = NULL;
+    const char *filef = NULL;
     pid_t pid;
     int opt;
     int err;
     unsigned long scratch_page = (unsigned long) -1;
     struct ptrace_child child;
 
-    while ((opt = getopt(argc, argv, "m:o:e:O:E:s:dNvh")) != -1) {
+    while ((opt = getopt(argc, argv, "m:o:e:O:E:s:f:dNvh")) != -1) {
         switch (opt) {
             case 'O':
                 if (fileo || fdo >= 0)
@@ -155,6 +159,15 @@ int main(int argc, char **argv) {
                 if (filee || fde >= 0 || fileo || fdo >= 0)
                     usage_die("-m is exclusive with  -o, -e, -O and -E\n");
                 fileo = filee = optarg;
+                break;
+            case 'f':
+                filef = strtok (optarg,":");
+                fdf_userinput = atoi(optarg);
+                filef = strtok (NULL, ":");
+                // if (fdf_userinput == 1)
+                //     usage_die("Please use -o -O to redirect stdout(fd 1)\n");
+                // if (fdf_userinput == 2)
+                //     usage_die("Please use -e -E to redirect stdout(fd 2)\n");
                 break;
             case 'N':
                 no_restore = 1;
@@ -191,10 +204,15 @@ int main(int argc, char **argv) {
         fdo = child_open(&child, scratch_page, fileo);
     if (filee)
         fde = child_open(&child, scratch_page, filee);
+    if (filef)
+        fdf = child_open(&child, scratch_page, filef);
     if (fdo >= 0)
         fdo_orig = child_dup(&child, fdo, 1, !no_restore);
     if (fde >= 0)
         fde_orig = child_dup(&child, fde, 2, !no_restore);
+    if (fdf >= 0)
+        fde_orig = child_dup(&child, fdf, fdf_userinput, !no_restore);
+        
     child_detach(&child, scratch_page);
 
     if (!no_restore) {
