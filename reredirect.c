@@ -119,8 +119,11 @@ int main(int argc, char **argv) {
     int no_restore = 0;
     int fde = -1;
     int fdo = -1;
+    int fdi = -1;
     int fde_orig = -1;
     int fdo_orig = -1;
+    int fdi_orig = -1;
+    const char *filei = NULL;
     const char *fileo = NULL;
     const char *filee = NULL;
     pid_t pid;
@@ -129,8 +132,13 @@ int main(int argc, char **argv) {
     unsigned long scratch_page = (unsigned long) -1;
     struct ptrace_child child;
 
-    while ((opt = getopt(argc, argv, "m:o:e:O:E:s:dNvh")) != -1) {
+    while ((opt = getopt(argc, argv, "m:i:o:e:I:O:E:s:dNvh")) != -1) {
         switch (opt) {
+            case 'I':
+                if (filei || fdi >= 0)
+                    usage_die("-i and -I are exclusive\n");
+                fdi = atoi(optarg);
+                break;
             case 'O':
                 if (fileo || fdo >= 0)
                     usage_die("-m, -o and -O are exclusive\n");
@@ -140,6 +148,11 @@ int main(int argc, char **argv) {
                 if (filee || fde >= 0)
                     usage_die("-m, -e and -E are exclusive\n");
                 fde = atoi(optarg);
+                break;
+            case 'i':
+                if (filei || fdi >= 0)
+                    usage_die("-i and -I are exclusive\n");
+                filei = optarg;
                 break;
             case 'o':
                 if (fileo || fdo >= 0)
@@ -187,10 +200,14 @@ int main(int argc, char **argv) {
             check_yama_ptrace_scope();
         exit(1);
     }
+    if (filei)
+        fdi = child_open(&child, scratch_page, filei);
     if (fileo)
         fdo = child_open(&child, scratch_page, fileo);
     if (filee)
         fde = child_open(&child, scratch_page, filee);
+    if (fdi >= 0)
+        fdi_orig = child_dup(&child, fdi, 0, !no_restore);
     if (fdo >= 0)
         fdo_orig = child_dup(&child, fdo, 1, !no_restore);
     if (fde >= 0)
@@ -199,7 +216,7 @@ int main(int argc, char **argv) {
 
     if (!no_restore) {
         printf("# Previous state saved. To restore, use:\n");
-        printf("%s -N -O %d -E %d %d\n", program_invocation_name, fdo_orig, fde_orig, pid);
+        printf("%s -N -I %d -O %d -E %d %d\n", program_invocation_name, fdi_orig, fdo_orig, fde_orig, pid);
     }
 
     return 0;
