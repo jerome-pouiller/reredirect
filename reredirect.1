@@ -3,12 +3,18 @@
 .SH NAME
 reredirect \- Tool to dynamically redirect outputs of a running process
 .SH SYNOPSIS
-.B reredirect [-m
+.B reredirect [-i
+.I FILE
+.B |-i
+.I FD
+.B ] [-m
 .I FILE
 .B |-o
 .I FILE
 .B |-e
 .I FILE
+.B |-I
+.I FD
 .B |-O
 .I FD
 .B |-E
@@ -20,7 +26,7 @@ reredirect \- Tool to dynamically redirect outputs of a running process
 
 .B reredirect
 is a utility for taking an existing running program and
-attaching its outputs (standard output and error output) to files or
+attaching its input/outputs (standard output and error output) to files or
 another process.
 
 Simple usage is:
@@ -32,9 +38,9 @@ It will redirect outputs of
 to 
 .I FILE.
 It is also possible to redirect standard
-output and error output in different files:
+input, output and error output in different files:
 
-    reredirect -o FILE1 -e FILE2 PID
+    reredirect -i FILE1 -o FILE2 -e FILE3 PID
 
 .B \-m
 option is just a shortcut to 
@@ -44,12 +50,16 @@ After launched, reredirect, give you command to restore state of
 .I PID.
 It will looks like:
 
-    reredirect -N -O 5 -E 3 5453
+    reredirect -N -I 4 -O 5 -E 3 5453
 
+.B \-I
+, 
 .B \-O
 and 
 .B \-E
 act as 
+.B \-i 
+, 
 .B \-o 
 and 
 .B \-e 
@@ -61,6 +71,11 @@ They only used to restore previous state of
 
 
 .SH OPTIONS
+
+.B \-i FILE
+.IP
+File to redirect stdin
+.LP
 
 .B \-o FILE
 .IP
@@ -76,6 +91,11 @@ File to redirect stderr
 .IP
 Same than 
 .B \-o FILE \-e FILE
+.LP
+
+.B \-I FD
+.IP
+Redirect stdin to this file descriptor. Mainly used to restore process input
 .LP
 
 .B \-O FD
