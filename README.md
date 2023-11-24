@@ -84,7 +84,7 @@ Launch a command on this named pipe:
 
 Note that `relink` only redirects output. The target process keep its original
 terminal. So if you type Ctrl+Z or CTRL+C, they are not sent to target process.
-If you want to do that, you should check the [`reptyr`](http://github.com/nelhage/reptyr) command from Nelson Elhage.
+If you want to do that, you should check the [`reptyr`](https://github.com/nelhage/reptyr) command from Nelson Elhage.
 
 Trick with Makefile
 ---------------------
@@ -155,4 +155,4 @@ was written by Nelson Elhage <nelhage@nelhage.com>.
 
 URL
 ---
-[http://github.com/jerome-pouiller/reredirect]()
+[https://github.com/jerome-pouiller/reredirect]()
