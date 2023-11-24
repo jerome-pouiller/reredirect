@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
                 break;
             case 'V':
                 printf("This is reredirect version %s.\n", REREDIRECT_VERSION);
-                printf("http://github.com/jerome-pouiller/reredirect/\n");
+                printf("https://github.com/jerome-pouiller/reredirect/\n");
                 exit(0);
             default: /* '?' */
                 usage_die("Unknown option\n");
