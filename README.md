@@ -57,7 +57,7 @@ original state is restored and command is detached.
 For exemple:
 
     relink 5453
-    relink 5453 | grep usefull_line
+    relink 5453 | grep useful_line
 
 `relink` maintains stderr from original command to stderr. So you can do things
 like:

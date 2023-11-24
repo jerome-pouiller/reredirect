@@ -13,7 +13,7 @@ usage() {
     echo
     echo 'Exemples:'
     echo '  relink $(pidof dhclient)'
-    echo '  relink $(pidof dhclient) | grep usefull_line'
+    echo '  relink $(pidof dhclient) | grep useful_line'
 }
 
 # detach
