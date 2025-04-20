@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
     unsigned long scratch_page = (unsigned long) -1;
     struct ptrace_child child;
 
-    while ((opt = getopt(argc, argv, "m:i:o:e:I:O:E:s:dNvh")) != -1) {
+    while ((opt = getopt(argc, argv, "m:i:o:e:I:O:E:s:dNvVh")) != -1) {
         switch (opt) {
             case 'I':
                 if (filei || fdi >= 0)
