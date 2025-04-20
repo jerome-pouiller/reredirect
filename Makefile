@@ -9,10 +9,22 @@ PREFIX=/usr/local
 
 all: reredirect
 
+.PHONY: .force
+# Get version from git
+GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always --tags 2>/dev/null || echo "0.1-unknown")
+
+version.h: .force
+	@VERSION_CONTENT='#define REREDIRECT_VERSION "$(GIT_VERSION)"'; \
+	EXISTING_CONTENT="$$(cat $@)"; \
+	if [ "$$EXISTING_CONTENT" != "$$VERSION_CONTENT" ]; then \
+		echo "$$VERSION_CONTENT" > $@; \
+		echo "Version updated to $(GIT_VERSION)"; \
+	fi
+
 reredirect: $(OBJS)
 
 attach.o: reredirect.h ptrace.h
-reredirect.o: reredirect.h
+reredirect.o: reredirect.h version.h
 ptrace.o: ptrace.h $(wildcard arch/*.h)
 
 clean:
