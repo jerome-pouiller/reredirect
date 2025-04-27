@@ -1,3 +1,11 @@
+* 0.4 (Apr 27, 2025)
+ - Fix compatibility with alternative libc
+ - Prefer the more modern openat() rather than open()
+ - Add -i/-I in addtion of -e/E and -o/-O
+ - Fix possible hang while attaching multi-thread application
+ - Add support for -V
+ - Rename the main branch in "main" (was "master")
+
 * 0.3 (Aug 16, 2021)
  - Update install instructions in README
  - Update ChangeLog
