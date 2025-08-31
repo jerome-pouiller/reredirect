@@ -39,11 +39,14 @@ static void usage() {
     fprintf(stderr, "  PID      Process to reattach\n");
     fprintf(stderr, "  -o FILE  File to redirect stdout. \n");
     fprintf(stderr, "  -e FILE  File to redirect stderr.\n");
+    fprintf(stderr, "  -i FILE  File to redirect stdin.\n");
     fprintf(stderr, "  -m FILE  Same than -o FILE -e FILE.\n");
     fprintf(stderr, "  -O FD    Redirect stdout to this file descriptor. Mainly used to restore\n");
     fprintf(stderr, "           process outputs.\n");
     fprintf(stderr, "  -E FD    Redirect stderr to this file descriptor. Mainly used to restore\n");
     fprintf(stderr, "           process outputs.\n");
+    fprintf(stderr, "  -I FD    Redirect stdin to this file descriptor. Mainly used to restore\n");
+    fprintf(stderr, "           process input.\n");
     fprintf(stderr, "  -N       Do not save previous stream.\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Notice you can redirect to another program using name pipe. For example:\n");
