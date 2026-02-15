@@ -32,7 +32,7 @@
 
 static int verbose = 0;
 
-static void usage() {
+static void usage(void) {
     char *me = program_invocation_short_name;
     fprintf(stderr, "Usage: %s [-m FILE|-o FILE|-e FILE|-O FD|-E FD] [-N] [-d] PID\n", me);
     fprintf(stderr, "%s redirect outputs of a running process to a file.\n", me);
@@ -176,7 +176,7 @@ int main(int argc, char **argv) {
                 no_restore = 1;
                 break;
             case 'h':
-                usage(argv[0]);
+                usage();
                 exit(0);
                 break;
             case 'v':
