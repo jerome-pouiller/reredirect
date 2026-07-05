@@ -51,10 +51,10 @@ Redirect to your terminal or a command
 --------------------------------------
 
 This package also provide an utility called `relink` that allows to redirect
-output to current terminal. When `relink` exits (with Ctrl+C for exemple)
+output to current terminal. When `relink` exits (with Ctrl+C for example)
 original state is restored and command is detached.
 
-For exemple:
+For example:
 
     relink 5453
     relink 5453 | grep useful_line
