@@ -34,6 +34,15 @@ output and error output in different files:
 
 `-m` option is just a shortcut to `-o FILE -e FILE`.
 
+Use `-H` to make the attached process ignore SIGHUP:
+
+    reredirect -H PID
+
+This changes the process's SIGHUP disposition to ignored.
+The restore command printed by `reredirect` includes the saved disposition, so
+running it restores the original SIGHUP behavior along with the original file
+descriptors.
+
 After being launched, reredirect give you the ability to restore state of PID.
 It will look something like this : 
 

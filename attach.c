@@ -23,6 +23,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <signal.h>
+#include <stdint.h>
 #include <sys/mman.h>
 #include <limits.h>
 
@@ -84,6 +87,55 @@ int child_detach(struct ptrace_child *child, child_addr_t scratch_page) {
     return 0;
 }
 
+static size_t child_sigaction_size(struct ptrace_child *child) {
+    return child->personality == 1 || sizeof(unsigned long) == 4 ? 20 : 32;
+}
+
+static int child_set_sighup(struct ptrace_child *child, child_addr_t scratch_page,
+                            const void *action, void *previous_action) {
+    size_t action_size = child_sigaction_size(child);
+    unsigned long rv;
+
+    if (ptrace_memcpy_to_child(child, scratch_page, action, action_size))
+        return child->error ? child->error : EIO;
+
+    rv = do_syscall(child, rt_sigaction, SIGHUP, scratch_page,
+                    previous_action ? scratch_page + action_size : 0,
+                    8, 0, 0);
+    if (rv > (unsigned long)-1000)
+        return -(signed long)rv;
+    if (child->error)
+        return child->error;
+
+    if (previous_action &&
+        ptrace_memcpy_from_child(child, previous_action,
+                                 scratch_page + action_size, action_size))
+        return child->error ? child->error : EIO;
+
+    return 0;
+}
+
+int child_ignore_sighup(struct ptrace_child *child, child_addr_t scratch_page,
+                        struct child_sigaction *previous_action) {
+    /* Kernel sigaction layout: handler, flags, restorer, and an 8-byte mask. */
+    uint32_t action_32[5] = { 1 };
+    struct {
+        unsigned long handler;
+        unsigned long flags;
+        unsigned long restorer;
+        uint32_t mask[2];
+    } action_native = { 1 };
+    const void *action = child->personality == 1 ? (const void *)action_32 :
+                                                   (const void *)&action_native;
+
+    return child_set_sighup(child, scratch_page, action, previous_action);
+}
+
+int child_restore_sighup(struct ptrace_child *child, child_addr_t scratch_page,
+                         const struct child_sigaction *action) {
+    return child_set_sighup(child, scratch_page, action->bytes, NULL);
+}
+
 int child_open(struct ptrace_child *child, child_addr_t scratch_page, const char *file) {
     int child_fd;
     char buf[PATH_MAX + 1];
@@ -135,4 +187,3 @@ int child_dup(struct ptrace_child *child, int file_fd, int orig_fd, int save_ori
     debug("Closed fd %d", file_fd);
     return save_fd;
 }
-

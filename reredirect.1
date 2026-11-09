@@ -19,7 +19,7 @@ reredirect \- Tool to dynamically redirect outputs of a running process
 .I FD
 .B |-E
 .I FD
-.B ] [-N] [-d]
+.B ] [-N] [-H] [-S STATE]
 .I PID
 
 .SH DESCRIPTION
@@ -113,6 +113,18 @@ Redirect stderr to this file descriptor. Mainly used to restore process outputs
 Do not save previous stream
 .LP
 
+.B \-H
+.IP
+Ignore SIGHUP in the attached process.
+.LP
+
+.B \-S STATE
+.IP
+Restore the SIGHUP disposition saved by a previous \,\-H option. The state is
+normally included in the restore command printed by reredirect.
+This option cannot be combined with stream redirection options or \,\-H.
+.LP
+
 .B \-V
 .IP
 Print the version of
@@ -161,4 +173,3 @@ was written by Nelson Elhage <nelhage@nelhage.com>.
 .SH HOMEPAGE
 
 .URL https://github.com/jerome-pouiller/reredirect
-
