@@ -34,7 +34,7 @@ static int verbose = 0;
 
 static void usage(void) {
     char *me = program_invocation_short_name;
-    fprintf(stderr, "Usage: %s [-m FILE|-o FILE|-e FILE|-O FD|-E FD] [-N] [-d] PID\n", me);
+    fprintf(stderr, "Usage: %s [-m FILE|-o FILE|-e FILE|-O FD|-E FD] [-N] [-H|-S STATE] PID\n", me);
     fprintf(stderr, "%s redirect outputs of a running process to a file.\n", me);
     fprintf(stderr, "  PID      Process to reattach\n");
     fprintf(stderr, "  -o FILE  File to redirect stdout. \n");
@@ -48,6 +48,8 @@ static void usage(void) {
     fprintf(stderr, "  -I FD    Redirect stdin to this file descriptor. Mainly used to restore\n");
     fprintf(stderr, "           process input.\n");
     fprintf(stderr, "  -N       Do not save previous stream.\n");
+    fprintf(stderr, "  -H       Ignore SIGHUP in the attached process.\n");
+    fprintf(stderr, "  -S STATE Restore SIGHUP disposition saved by -H (restore command only).\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Notice you can redirect to another program using name pipe. For example:\n");
     fprintf(stderr, "   mkfifo /tmp/fifo\n");
@@ -120,6 +122,11 @@ static void check_yama_ptrace_scope(void) {
 
 int main(int argc, char **argv) {
     int no_restore = 0;
+    int ignore_sighup = 0;
+    const char *sighup_state = NULL;
+    struct child_sigaction previous_sighup;
+    struct child_sigaction restore_sighup;
+    size_t sighup_state_len = 0;
     int fde = -1;
     int fdo = -1;
     int fdi = -1;
@@ -135,7 +142,7 @@ int main(int argc, char **argv) {
     unsigned long scratch_page = (unsigned long) -1;
     struct ptrace_child child;
 
-    while ((opt = getopt(argc, argv, "m:i:o:e:I:O:E:s:dNvVh")) != -1) {
+    while ((opt = getopt(argc, argv, "m:i:o:e:I:O:E:s:dHS:NvVh")) != -1) {
         switch (opt) {
             case 'I':
                 if (filei || fdi >= 0)
@@ -175,6 +182,12 @@ int main(int argc, char **argv) {
             case 'N':
                 no_restore = 1;
                 break;
+            case 'H':
+                ignore_sighup = 1;
+                break;
+            case 'S':
+                sighup_state = optarg;
+                break;
             case 'h':
                 usage();
                 exit(0);
@@ -194,6 +207,12 @@ int main(int argc, char **argv) {
 
     if (optind >= argc)
         usage_die("No pid specified to attach\n");
+    if (ignore_sighup && sighup_state)
+        usage_die("-H and -S are exclusive\n");
+    if (sighup_state && (filei || fileo || filee || fdi >= 0 || fdo >= 0 || fde >= 0))
+        usage_die("-S is exclusive with stream redirection options\n");
+    if (sighup_state && no_restore)
+        usage_die("-S is exclusive with -N\n");
 
     pid = atoi(argv[optind]);
     err = child_attach(pid, &child, &scratch_page);
@@ -202,6 +221,42 @@ int main(int argc, char **argv) {
         if (err == EPERM)
             check_yama_ptrace_scope();
         exit(1);
+    }
+    if (sighup_state) {
+        size_t i;
+        sighup_state_len = strlen(sighup_state);
+        if (sighup_state_len != (child.personality == 1 || sizeof(unsigned long) == 4 ? 40 : 64)) {
+            child_detach(&child, scratch_page);
+            usage_die("Invalid SIGHUP state\n");
+        }
+        for (i = 0; i < sighup_state_len / 2; i++) {
+            unsigned int byte;
+            if (sscanf(sighup_state + i * 2, "%2x", &byte) != 1 ||
+                !((sighup_state[i * 2] >= '0' && sighup_state[i * 2] <= '9') ||
+                  (sighup_state[i * 2] >= 'a' && sighup_state[i * 2] <= 'f') ||
+                  (sighup_state[i * 2] >= 'A' && sighup_state[i * 2] <= 'F')) ||
+                !((sighup_state[i * 2 + 1] >= '0' && sighup_state[i * 2 + 1] <= '9') ||
+                  (sighup_state[i * 2 + 1] >= 'a' && sighup_state[i * 2 + 1] <= 'f') ||
+                  (sighup_state[i * 2 + 1] >= 'A' && sighup_state[i * 2 + 1] <= 'F'))) {
+                child_detach(&child, scratch_page);
+                usage_die("Invalid SIGHUP state\n");
+            }
+            restore_sighup.bytes[i] = (unsigned char)byte;
+        }
+        err = child_restore_sighup(&child, scratch_page, &restore_sighup);
+        if (err) {
+            child_detach(&child, scratch_page);
+            fprintf(stderr, "Unable to restore SIGHUP disposition in pid %d: %s\n", pid, strerror(err));
+            exit(1);
+        }
+    }
+    if (ignore_sighup) {
+        err = child_ignore_sighup(&child, scratch_page, &previous_sighup);
+        if (err) {
+            child_detach(&child, scratch_page);
+            fprintf(stderr, "Unable to ignore SIGHUP in pid %d: %s\n", pid, strerror(err));
+            exit(1);
+        }
     }
     if (filei)
         fdi = child_open(&child, scratch_page, filei);
@@ -217,9 +272,18 @@ int main(int argc, char **argv) {
         fde_orig = child_dup(&child, fde, 2, !no_restore);
     child_detach(&child, scratch_page);
 
-    if (!no_restore) {
+    if (!no_restore || ignore_sighup) {
         printf("# Previous state saved. To restore, use:\n");
-        printf("%s -N -I %d -O %d -E %d %d\n", program_invocation_name, fdi_orig, fdo_orig, fde_orig, pid);
+        printf("%s -N", program_invocation_name);
+        if (!no_restore)
+            printf(" -I %d -O %d -E %d", fdi_orig, fdo_orig, fde_orig);
+        if (ignore_sighup) {
+            size_t i;
+            printf(" -S ");
+            for (i = 0; i < (child.personality == 1 || sizeof(unsigned long) == 4 ? 20 : 32); i++)
+                printf("%02x", previous_sighup.bytes[i]);
+        }
+        printf(" %d\n", pid);
     }
 
     return 0;

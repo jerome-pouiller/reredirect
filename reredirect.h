@@ -23,8 +23,15 @@
 #include "ptrace.h"
 #include "version.h"
 
+#define CHILD_SIGACTION_SIZE 32
+struct child_sigaction { unsigned char bytes[CHILD_SIGACTION_SIZE]; };
+
 int child_attach(pid_t pid, struct ptrace_child *child, child_addr_t *scratch_page);
 int child_detach(struct ptrace_child *child, child_addr_t scratch_page);
+int child_ignore_sighup(struct ptrace_child *child, child_addr_t scratch_page,
+                        struct child_sigaction *previous_action);
+int child_restore_sighup(struct ptrace_child *child, child_addr_t scratch_page,
+                         const struct child_sigaction *action);
 int child_open(struct ptrace_child *child, child_addr_t scratch_page, const char *file);
 int child_dup(struct ptrace_child *child, int file_fd, int orig_fd, int save_orig);
 
